@@ -1,0 +1,22 @@
+{
+    "name": "rohits/laravel-dir-cleanup",
+    "type": "library",
+    "authors": [
+        {
+            "name": "rohits",
+            "email": "rohit97on@gmail.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [
+            "Src/"
+        ],
+        "psr-4": {
+            "Rohits/Src/\\": "Src"
+        }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.3",
+        "orchestra/testbench": "^5.4"
+    }
+}
