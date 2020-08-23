@@ -1,4 +1,4 @@
 vendor
 .vscode
-Tests/TestData/
+Tests/Unit/cleanup-package-test-data/**
 .phpunit.result.cache

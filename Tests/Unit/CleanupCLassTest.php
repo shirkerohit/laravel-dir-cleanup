@@ -2,20 +2,77 @@
 
 namespace Tests\Unit;
 
-use Mockery;
 use Orchestra\Testbench\TestCase;
 use Rohits\Src\Cleanup;
 
 class CleanupClassTest extends TestCase
 {
-    var $root = __DIR__ . "\\..\\TestData";
-    var $directories = ["Test1", "Test2"];
+    var $slug = "cleanup-package-test-data";
+    var $root = null;
+    var $directories = [];
     var $depth = "*";
-    var $extentions = ["csv"];
+    var $extensions = [];
     var $log = true;
-    var $logDirectory = "Test";
-    var $logFile = "log_file.txt";
+    var $logDirectory = null;
+    var $logFile = null;
     var $app = null;
+
+    // used by tests setup.
+    var $testDirs =  ["folder1"];
+    var $testFiles = ["test.csv", "test.txt"];
+    var $nestingLevel = 4;
+
+    public function __construct()
+    {
+        parent::__construct();
+        $this->root = __DIR__ . DIRECTORY_SEPARATOR . $this->slug;
+        $this->directories = $this->testDirs;
+        $this->depth = "*";
+        $this->extensions = ["txt", "csv"];
+        $this->log = true;
+        $this->logDirectory = "log_directory";
+        $this->logFile = "cleanup_log.txt";
+    }
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // create test directory root.
+        if ((!file_exists($this->root)) && (!is_dir($this->root))) {
+            @mkdir($this->root);
+        }
+        return;
+    }
+
+    public function cleanup()
+    {
+        $level = 1;
+        $dirList = [];
+        foreach ($this->testDirs as $dir) {
+            $dirPath = $this->root . DIRECTORY_SEPARATOR . $dir;
+            while ($level <= $this->nestingLevel) {
+                $this->deleteFilesAndDir($dirPath);
+                array_push($dirList, $dirPath);
+                $dirPath = $dirPath . DIRECTORY_SEPARATOR . $dir;
+                $level++;
+            }
+            $level = 1;
+        }
+
+        // clean directories.
+        array_map(function ($dir) {
+            rmdir($dir);
+        }, array_reverse($dirList));
+    }
+
+    public function deleteFilesAndDir($path)
+    {
+        foreach ($this->testFiles as $file) {
+            $filePath = $path . DIRECTORY_SEPARATOR . $file;
+            file_exists($filePath) ? unlink($filePath) : "";
+        }
+    }
 
     protected function getEnvironmentSetUp($app)
     {
@@ -24,94 +81,119 @@ class CleanupClassTest extends TestCase
         $app['config']->set('cleanup.root', $this->root);
         $app['config']->set('cleanup.directories', $this->directories);
         $app['config']->set('cleanup.level', $this->depth);
-        $app['config']->set('cleanup.extentions', $this->extentions);
+        $app['config']->set('cleanup.extensions', $this->extensions);
         $app['config']->set('cleanup.log', $this->log);
         $app['config']->set('cleanup.logDirectory', $this->logDirectory);
         $app['config']->set('cleanup.logFileName', $this->logFile);
     }
 
-    public function test_config_loads()
+    public function createDirs($dirs = [])
     {
-        $obj = new Cleanup();
+        $level = $this->nestingLevel;
 
+        foreach ($dirs as $dir) {
+            $dirPath = $this->root;
+            $dirPath = $this->createTestDirAndTestFiles($dirPath, $dir);
+            while ($level > 1) {
+                $dirPath = $this->createTestDirAndTestFiles($dirPath, $dir);
+                $level--;
+            }
+            $level = $this->nestingLevel;
+        }
+    }
+
+    public function createTestDirAndTestFiles($path, $dirname)
+    {
+        $path = $path . DIRECTORY_SEPARATOR . $dirname;
+        !file_exists($path) || !is_dir($path) ?  @mkdir($path) : "";
+
+        foreach ($this->testFiles as $file) {
+            fopen($path . DIRECTORY_SEPARATOR . $file, "a");
+        }
+
+        return $path;
+    }
+
+    /**
+     * Tests begin here.
+     */
+
+    public function test_it_loads_config_and_does_basic_setup()
+    {
         $this->assertNotEmpty(config('cleanup'));
         $this->assertEquals(config('cleanup.root'), $this->root);
         $this->assertEquals(config('cleanup.directories'), $this->directories);
         $this->assertEquals(config('cleanup.level'), $this->depth);
-        $this->assertEquals(config('cleanup.extentions'), $this->extentions);
+        $this->assertEquals(config('cleanup.extensions'), $this->extensions);
         $this->assertEquals(config('cleanup.log'), $this->log);
         $this->assertEquals(config('cleanup.logDirectory'), $this->logDirectory);
         $this->assertEquals(config('cleanup.logFileName'), $this->logFile);
 
+        $obj = new Cleanup();
         $obj->cleanup();
 
-        $this->assertDirectoryExists(__DIR__ . "\\..\\TestData\\test");
-        $this->assertFileExists(__DIR__ . "\\..\\TestData\\test\\log_file.txt");
+        $this->assertDirectoryExists($this->root . DIRECTORY_SEPARATOR . $this->logDirectory);
+        $this->assertFileExists($this->root . DIRECTORY_SEPARATOR . $this->logDirectory . DIRECTORY_SEPARATOR . $this->logFile);
     }
 
-    public function createDirs($dirs = [])
+    public function test_it_delete_only_files_with_maching_extention()
     {
-        foreach ($dirs as $dir) {
-            @mkdir($this->root . DIRECTORY_SEPARATOR . $dir);
-            fopen($this->root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . 'test.txt', "a");
-            fopen($this->root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . 'test.csv', "a");
+        $matchExtentions = ["txt"];
 
-            @mkdir($this->root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $dir);
-            fopen($this->root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . 'test.txt', "a");
-            fopen($this->root . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR . 'test.csv', "a");
-        }
-    }
-
-    public function test_it_delete_specified_matching_files()
-    {
-        $dirs = ["folder1", "folder2", "folder3"];
-        $this->createDirs($dirs);
-        $this->app['config']->set('cleanup.directories', $dirs);
+        $this->createDirs($this->testDirs);
+        $this->app['config']->set('cleanup.directories', $this->testDirs);
         $this->app['config']->set('cleanup.level', "*");
-        $this->app['config']->set('cleanup.extentions', ['txt']);
+        $this->app['config']->set('cleanup.extensions', $matchExtentions);
+
         $obj = new Cleanup();
         $obj->cleanup();
         // check only txt deleted
-        $this->assertFileDoesNotExist(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
-        $this->assertFileExists(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.csv");
+        $level = 1;
+        foreach ($this->testDirs as $dir) {
+            $path = config('cleanup.root') . DIRECTORY_SEPARATOR . $dir;
+            while ($level  <= $this->nestingLevel) {
+                $this->assertFileDoesNotExist($path . DIRECTORY_SEPARATOR . "test.txt");
+                $this->assertFileExists($path . DIRECTORY_SEPARATOR . "test.csv");
+                $path = $path . DIRECTORY_SEPARATOR . $dir;
+                $level++;
+            }
+            $level = 1;
+        }
     }
 
-    public function test_it_delete_specified_level()
+    public function test_it_only_delete_specified_level()
     {
-        // test depth all
-        $dirs = ["folder1", "folder2", "folder3"];
-        $this->createDirs($dirs);
-        $this->app['config']->set('cleanup.directories', $dirs);
-        $this->app['config']->set('cleanup.level', "*");
-        $this->app['config']->set('cleanup.extentions', ['txt', 'csv']);
+        $nestLevelTest = 2;
+        $testExtensions = ["txt"];
+
+        $this->app['config']->set('cleanup.directories', $this->testDirs);
+        $this->app['config']->set('cleanup.level', $nestLevelTest);
+        $this->app['config']->set('cleanup.extensions', $testExtensions);
+        $this->createDirs($this->testDirs);
         $obj = new Cleanup();
         $obj->cleanup();
 
-        $this->assertFileDoesNotExist(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
-        $this->assertFileDoesNotExist(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
+        $level = 1;
+        $nestLevel = config('cleanup.level');
+        foreach ($this->testDirs as $dir) {
+            $path = config('cleanup.root') . DIRECTORY_SEPARATOR . $dir;
+            while ($level <= $this->nestingLevel) {
+                if ($level <= $nestLevel) {
+                    $this->assertFileDoesNotExist($path . DIRECTORY_SEPARATOR . "test.txt");
+                } else {
+                    $this->assertFileExists($path . DIRECTORY_SEPARATOR . "test.txt");
+                }
+                $this->assertFileExists($path . DIRECTORY_SEPARATOR . "test.csv");
+                $path = $path . DIRECTORY_SEPARATOR . $dir;
+                $level++;
+            }
+            $level = 1;
+        }
+    }
 
-        // test single level.
-        $this->createDirs($dirs);
-        $this->app['config']->set('cleanup.level', 1);
-        $obj = new Cleanup();
-        $obj->cleanup();
-        $this->assertFileExists(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
-
-        // test level 2
-        $this->createDirs($dirs);
-        $this->app['config']->set('cleanup.level', 2);
-        $this->app['config']->set('cleanup.extentions', ["csv"]);
-        $obj = new Cleanup();
-        $obj->cleanup();
-        $this->assertFileDoesNotExist(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.csv");
-        $this->assertFileExists(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
-
-        // test level that does not exits.
-        $this->createDirs($dirs);
-        $this->app['config']->set('cleanup.level', 10);
-        $this->app['config']->set('cleanup.extentions', ["txt", "csv"]);
-        $obj = new Cleanup();
-        $obj->cleanup();
-        $this->assertFileDoesNotExist(config('cleanup.root') . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . $dirs[0] . DIRECTORY_SEPARATOR . "test.txt");
+    public function test_it_clean_dummy_folders()
+    {
+        $this->cleanup();
+        $this->assertTrue(true);
     }
 }

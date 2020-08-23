@@ -8,5 +8,5 @@ interface CleanupInterface
     public function getRoot();
     public function getDirectories();
     public function getDepth();
-    public function getFileExtentionPattern();
+    public function getFileExtensionPattern();
 }

@@ -22,7 +22,7 @@ return [
     /**
      * List of extentions of files to be deleted. eg. csv;
      */
-    "extentions" => [],
+    "extensions" => [],
 
     /**
      * Specify if you want to log the deleted files.

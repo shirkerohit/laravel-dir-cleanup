@@ -11,7 +11,7 @@ class Cleanup implements CleanupInterface
 
     protected $directories = [];
 
-    protected $fileExtentions = [];
+    protected $fileExtensions = [];
 
     protected $depth = "*";
 
@@ -40,7 +40,7 @@ class Cleanup implements CleanupInterface
     {
         $this->root = config("cleanup.root", null);
         $this->directories = config("cleanup.directories", []);
-        $this->fileExtentions = config("cleanup.extentions", []);
+        $this->fileExtensions = config("cleanup.extensions", []);
         $this->depth = config("cleanup.level", "*");
         $this->log = config("cleanup.log", true);
         $this->logDirectory = config("cleanup.logDirectory", null);
@@ -71,9 +71,9 @@ class Cleanup implements CleanupInterface
         return $this->depth;
     }
 
-    public function getFileExtentionPattern()
+    public function getFileExtensionPattern()
     {
-        return $this->fileExtentions;
+        return $this->fileExtensions;
     }
 
     public function cleanup()
@@ -168,7 +168,7 @@ class Cleanup implements CleanupInterface
     private function matchFilePattern($file)
     {
         $fileExtension = pathinfo(basename($file), PATHINFO_EXTENSION);
-        if (in_array($fileExtension, $this->getFileExtentionPattern())) {
+        if (in_array($fileExtension, $this->getFileExtensionPattern())) {
             return true;
         }
         return false;
