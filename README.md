@@ -1,6 +1,8 @@
 # laravel-dir-cleanup
 Simple package to delete unwanted files from list of directories.
 
+[![Latest Stable Version](https://poser.pugx.org/rohits/laravel-dir-cleanup/v)](//packagist.org/packages/rohits/laravel-dir-cleanup) [![Total Downloads](https://poser.pugx.org/rohits/laravel-dir-cleanup/downloads)](//packagist.org/packages/rohits/laravel-dir-cleanup) [![Latest Unstable Version](https://poser.pugx.org/rohits/laravel-dir-cleanup/v/unstable)](//packagist.org/packages/rohits/laravel-dir-cleanup) [![License](https://poser.pugx.org/rohits/laravel-dir-cleanup/license)](//packagist.org/packages/rohits/laravel-dir-cleanup)
+
 # Installation :
 
 ## Composer :

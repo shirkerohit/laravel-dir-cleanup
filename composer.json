@@ -2,10 +2,16 @@
     "name": "rohits/laravel-dir-cleanup",
     "type": "library",
     "license": "MIT",
+    "keywords": [
+        "laravel",
+        "clean-directories",
+        "laravel-directory-cleanup"
+    ],
     "authors": [
         {
             "name": "rohits",
-            "email": "rohit97on@gmail.com"
+            "email": "rohit97on@gmail.com",
+            "role": "Developer"
         }
     ],
     "autoload": {
@@ -16,7 +22,12 @@
             "Rohits/Src/\\": "Src"
         }
     },
+    "require": {
+        "php": "^7.3"
+    },
     "require-dev": {
         "orchestra/testbench": "^5.4"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
